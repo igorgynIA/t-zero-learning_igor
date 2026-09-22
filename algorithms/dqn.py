@@ -123,7 +123,18 @@ class ReplayBuffer:
 
         """
         # ==================== YOUR CODE HERE (Part 1a) ====================
-        raise NotImplementedError("Implement ReplayBuffer.add")
+        #Atualizar informação da  posição atual nos vetores próprios
+        self.observations[self.pos] = obs
+        self.next_observations[self.pos] = next_obs
+        self.actions[self.pos] = action
+        self.rewards[self.pos] = reward
+        self.dones[self.pos] = done
+
+        #Movimento circular
+        self.pos = (self.pos + 1) % self.capacity
+
+        #atualizar size
+        self.size = min(self.size + 1, self.capacity)
         # ==================================================================
 
     def sample(self, batch_size: int) -> Batch:
@@ -134,18 +145,32 @@ class ReplayBuffer:
         next_observations (B, *obs_shape), rewards (B, 1), dones (B, 1).
 
         """
-        # ==================== YOUR CODE HERE (Part 1b) ====================
-        raise NotImplementedError("Implement ReplayBuffer.sample")
-        # ==================================================================
-
+        # 1.Sorteio dos índices (np.random.randint, entre 0 e self.size, com batch_size valores)
+        indices = np.random.randint(0, self.size, size=batch_size)
+        # 2. Indexação dos 5 arrays com esses índices
+        obs_batch = torch.tensor(self.observations[indices], dtype=torch.float32, device=self.device)
+        rewards_batch = torch.tensor(self.rewards[indices], dtype=torch.float32, device=self.device)
+        dones_batch = torch.tensor(self.dones[indices], dtype=torch.float32, device=self.device)
+        next_obs_batch = torch.tensor(self.next_observations[indices], dtype=torch.float32, device=self.device)
+        actions_batch = torch.tensor(self.actions[indices], dtype=torch.int64, device=self.device)
+        # 4. Montagem do Batch final
+        return Batch(
+            observations=obs_batch,
+            actions=actions_batch,
+            next_observations=next_obs_batch,
+            rewards=rewards_batch,
+            dones=dones_batch,
+        )
 
 def compute_td_targets(target_network, batch: Batch, gamma: float) -> torch.Tensor:
     """Compute the one-step TD target for a batch of transitions.
 
     """
-    # ===================== YOUR CODE HERE (Part 2) =====================
-    raise NotImplementedError("Implement compute_td_targets")
-    # ===================================================================
+    with torch.no_grad():
+        target = target_network(batch.next_observations).max(dim=1, keepdim=True).values
+    td_values = batch.rewards + gamma * (1 - batch.dones) *  target
+
+    return td_values.squeeze(-1)
 
 
 def linear_schedule(start_e: float, end_e: float, duration: int, t: int) -> float:
