@@ -113,11 +113,13 @@ def compute_n_step_returns(
         (T, N) returns R_t = r_t + gamma * (1 - done_t) * R_{t+1}, with
         R_T = next_value.
     """
-    # ===================== YOUR CODE HERE (Part 1) =====================
-    raise NotImplementedError("Implement compute_n_step_returns")
-    # ===================================================================
-
-
+    returns = torch.zeros_like(rewards)                      
+    R = next_value                          
+    for t in range(rewards.shape[0] -1, -1, -1):                    
+        R = rewards[t] + gamma * (1 - dones[t]) * R                      
+        returns[t] = R
+    return returns
+ 
 def compute_policy_loss(
     logprobs: torch.Tensor, returns: torch.Tensor, values: torch.Tensor, use_baseline: bool = True
 ) -> torch.Tensor:
