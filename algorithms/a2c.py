@@ -133,10 +133,11 @@ def compute_policy_loss(
     Returns a scalar whose gradient *descent* performs policy gradient
     *ascent*.
     """
-    # ===================== YOUR CODE HERE (Part 2) =====================
-    raise NotImplementedError("Implement compute_policy_loss")
-    # ===================================================================
-
+    if use_baseline:
+        weights = returns - values.detach()
+    else:
+        weights = returns
+    return -(logprobs * weights).mean()
 
 class A2C(Algorithm):
     """Synchronous advantage actor-critic for discrete action spaces.
